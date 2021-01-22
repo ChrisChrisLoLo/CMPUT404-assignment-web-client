@@ -55,8 +55,7 @@ class HTTPClient(object):
         return
 
     def get_body(self, data):
-        # TODO: add check if \r\n is in html
-        print("Parsed Body: "+data.split('\r\n')[-1])
+        print("Parsed Body: "+data.split('\r\n\r\n',1)[-1])
         return data.split('\r\n')[-1]
     
     def sendall(self, data):
@@ -100,7 +99,7 @@ class HTTPClient(object):
 
             # print(data)
             code = self.get_code(data)
-            body = self.get_code(data)
+            body = self.get_body(data)
             return HTTPResponse(code, body)
         except Exception as e:
             print(e)
@@ -108,9 +107,15 @@ class HTTPClient(object):
             self.close()
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
-        return HTTPResponse(code, body)
+            # host = url.netloc+f':{url.port}' if url.port else url.hostname
+            path = url.path if url.path else '/'
+            self.sendall(f'POST {path} HTTP/1.0\r\nHost: {url.netloc}\r\n\r\n')
+            data = self.recvall(self.socket)
+
+            # print(data)
+            code = self.get_code(data)
+            body = self.get_body(data)
+            return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
