@@ -33,23 +33,34 @@ class HTTPResponse(object):
         self.body = body
 
 class HTTPClient(object):
-    #def get_host_port(self,url):
+    # def get_host_port(self,url):
 
     def connect(self, host, port):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((host, port))
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print(f'Connecting to {(host,port)}')
+            self.socket.connect((host, port))
+        except Exception as e:
+            if self.socket:
+                self.socket.close()
+            raise e
         return None
 
     def get_code(self, data):
-        return None
+        print("Parsed Code: "+data.split('\r\n')[0].split(' ')[1])
+        return int(data.split('\r\n')[0].split(' ')[1])
 
     def get_headers(self,data):
-        return None
+        # return data.split('\r\n')[0].split(' ')[1]
+        return
 
     def get_body(self, data):
-        return None
+        # TODO: add check if \r\n is in html
+        print("Parsed Body: "+data.split('\r\n')[-1])
+        return data.split('\r\n')[-1]
     
     def sendall(self, data):
+        print(f'sending {data}')
         self.socket.sendall(data.encode('utf-8'))
         
     def close(self):
@@ -60,17 +71,41 @@ class HTTPClient(object):
         buffer = bytearray()
         done = False
         while not done:
-            part = sock.recv(1024)
+            part = sock.recv(4096)
             if (part):
                 buffer.extend(part)
             else:
                 done = not part
-        return buffer.decode('utf-8')
+        print(buffer)
+        return buffer.decode('utf-8', 'backslashreplace')
 
-    def GET(self, url, args=None):
-        code = 500
-        body = ""
-        return HTTPResponse(code, body)
+    def GET(self, url_string, args=None):
+        # if 'http://' not in url_string:
+        #     url_string = 'http://' + url_string
+        # url_string='http://127.0.0.1'
+
+        url = urllib.parse.urlparse(url_string)
+        print(url)
+        print(f'SOCKET:::: {socket.gethostbyname(url.hostname)}')
+        
+        # hostAndPort = ip_addr+f':{url.port}' if url.port else ip_addr
+
+        port = url.port if url.port else 80
+        self.connect(socket.gethostbyname(url.hostname), port)
+        try:
+            # host = url.netloc+f':{url.port}' if url.port else url.hostname
+            path = url.path if url.path else '/'
+            self.sendall(f'GET {path} HTTP/1.0\r\nHost: {url.netloc}\r\n\r\n')
+            data = self.recvall(self.socket)
+
+            # print(data)
+            code = self.get_code(data)
+            body = self.get_code(data)
+            return HTTPResponse(code, body)
+        except Exception as e:
+            print(e)
+        finally:
+            self.close()
 
     def POST(self, url, args=None):
         code = 500
