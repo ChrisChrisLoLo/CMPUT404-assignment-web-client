@@ -108,8 +108,13 @@ class HTTPClient(object):
 
     def POST(self, url, args=None):
             # host = url.netloc+f':{url.port}' if url.port else url.hostname
+            post_body = ''
+            if args:
+                post_body = '&'.join()
+
             path = url.path if url.path else '/'
-            self.sendall(f'POST {path} HTTP/1.0\r\nHost: {url.netloc}\r\n\r\n')
+            self.sendall(f'POST {path} HTTP/1.0\r\nHost: {url.netloc}\r\nContent-Type: application/x-www-form-urlencoded
+\r\n\r\n')
             data = self.recvall(self.socket)
 
             # print(data)
