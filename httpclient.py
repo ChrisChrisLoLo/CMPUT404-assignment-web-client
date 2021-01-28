@@ -105,15 +105,14 @@ class HTTPClient(object):
     def POST(self, url_string, args=None):
 
         url = urllib.parse.urlparse(url_string)
-        # print(url)
-        # print(f'SOCKET:::: {socket.gethostbyname(url.hostname)}')
 
         port = url.port if url.port else 80
         self.connect(socket.gethostbyname(url.hostname), port)
         try:
             post_body = ''
             if args:
-                post_body = '&'.join([f'{key}={value}' for key,value in args.items()])
+                #use quote in order to escape sequences
+                post_body = urllib.parse.urlencode(args)
             content_length_header = f'Content-Length:{len(post_body)}\r\n'
 
             path = url.path if url.path else '/'
