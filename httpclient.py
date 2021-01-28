@@ -84,20 +84,16 @@ class HTTPClient(object):
         # url_string='http://127.0.0.1'
 
         url = urllib.parse.urlparse(url_string)
-        print(url)
-        print(f'SOCKET:::: {socket.gethostbyname(url.hostname)}')
+        # print(url)
+        # print(f'SOCKET:::: {socket.gethostbyname(url.hostname)}')
         
-        # hostAndPort = ip_addr+f':{url.port}' if url.port else ip_addr
-
         port = url.port if url.port else 80
         self.connect(socket.gethostbyname(url.hostname), port)
         try:
-            # host = url.netloc+f':{url.port}' if url.port else url.hostname
             path = url.path if url.path else '/'
             self.sendall(f'GET {path} HTTP/1.0\r\nHost: {url.netloc}\r\n\r\n')
             data = self.recvall(self.socket)
 
-            # print(data)
             code = self.get_code(data)
             body = self.get_body(data)
             return HTTPResponse(code, body)
@@ -106,21 +102,31 @@ class HTTPClient(object):
         finally:
             self.close()
 
-    def POST(self, url, args=None):
-            # host = url.netloc+f':{url.port}' if url.port else url.hostname
+    def POST(self, url_string, args=None):
+
+        url = urllib.parse.urlparse(url_string)
+        # print(url)
+        # print(f'SOCKET:::: {socket.gethostbyname(url.hostname)}')
+
+        port = url.port if url.port else 80
+        self.connect(socket.gethostbyname(url.hostname), port)
+        try:
             post_body = ''
             if args:
-                post_body = '&'.join()
+                post_body = '&'.join([f'{key}={value}' for key,value in args.items()])
+            content_length_header = f'Content-Length:{len(post_body)}\r\n'
 
             path = url.path if url.path else '/'
-            self.sendall(f'POST {path} HTTP/1.0\r\nHost: {url.netloc}\r\nContent-Type: application/x-www-form-urlencoded
-\r\n\r\n')
+            self.sendall(f'POST {path} HTTP/1.0\r\nHost: {url.netloc}\r\nContent-Type: application/x-www-form-urlencoded\r\n{content_length_header}\r\n{post_body}')
             data = self.recvall(self.socket)
 
-            # print(data)
             code = self.get_code(data)
             body = self.get_body(data)
             return HTTPResponse(code, body)
+        except Exception as e:
+            print(e)
+        finally:
+            self.close()
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
